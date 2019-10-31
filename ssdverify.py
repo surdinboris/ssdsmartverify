@@ -7,7 +7,7 @@ import re
 coloramainit(autoreset=True)
 debug = False
 
-verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100,"Current_Pending_Sector":110}}
+verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":110}}
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
            3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
@@ -18,7 +18,7 @@ ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
            9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
-           11: {"HDD-TEST-01":"Hitachi HUA72101"}
+           11: {"HDD-TEST-01": "Hitachi HUA72101"}
            }
 
 def start_verify(ssd_choice):
@@ -152,4 +152,4 @@ if __name__ == '__main__':
             start_verify(ssd_choice)
 
         else:
-            print('Please enter a valid choise')
+            print('Please enter a valid choice')
