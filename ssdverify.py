@@ -62,7 +62,7 @@ def start_verify(ssd_choice):
 
     #checking ssds of the same pn - in cas of inconsistency - interrupting
     if len(inconsist) > 1:
-        print(Fore.RED + "Error: found different models in batch. Please check inconsistent data:")
+        print(Fore.RED + "Error: found different models in one batch. Please check inconsistent data:")
         for key, value in inconsist.items():
             print(Fore.RED + "{} {}".format(key, value, ))
         print(Fore.RED + "SSD list:")
@@ -71,7 +71,7 @@ def start_verify(ssd_choice):
         return
     for key, value in inconsist.items():
          if key != list(ssd_pns[ssd_choice].values())[0]:
-            print(Fore.RED + "Error, wrong ssd model  for {} (was found \"{}\" while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
+            print(Fore.RED + "Error, wrong ssd model  for {} ( \"{}\" was found while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
             return
 
     print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
@@ -137,7 +137,7 @@ def start_verify(ssd_choice):
 if __name__ == '__main__':
     while True:
         print("\n"*2)
-        print("Availalable SSD's:")
+        print("Available SSD type for verification:")
         print("_"*50)
         print("\n")
         for x, y in ssd_pns.items():
