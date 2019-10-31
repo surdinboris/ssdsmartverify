@@ -3,7 +3,7 @@ from datetime import *
 import logging
 from colorama import Fore, init as coloramainit
 import re
-
+import time
 coloramainit(autoreset=True)
 debug = False
 
@@ -72,6 +72,7 @@ def start_verify(ssd_choice):
     for key, value in inconsist.items():
          if key != list(ssd_pns[ssd_choice].values())[0]:
             print(Fore.RED + "Error, wrong ssd model  for {} ( \"{}\" was found while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
+            time.sleep(2)
             return
 
     print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
@@ -132,11 +133,12 @@ def start_verify(ssd_choice):
     print("Process finished.")
     input("Press Enter to continue or ctrl-c to exit...")
     print("*"*100)
+    time.sleep(2)
 
 #starting
 if __name__ == '__main__':
     while True:
-        print("\n"*2)
+        print("\n")
         print("Available SSD type for verification:")
         print("_"*50)
         print("\n")
