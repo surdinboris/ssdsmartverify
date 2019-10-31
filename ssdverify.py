@@ -18,7 +18,7 @@ ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
            9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
-           11: {"HDD-TEST-01":"Hitachi HUA721010"}
+           11: {"HDD-TEST-01":"Hitachi HUA72101"}
            }
 
 def start_verify(ssd_choice):
@@ -65,19 +65,19 @@ def start_verify(ssd_choice):
 
     #checking ssds of the same pn - in cas of inconsistency - interrupting
     if len(inconsist) > 1:
-        print("Error: found different models in batch. Please check inconsistent data:")
+        print(Fore.RED + "Error: found different models in batch. Please check inconsistent data:")
         for key, value in inconsist.items():
-            print("{} {}".format(key, value, ))
-        print("SSD list:")
+            print(Fore.RED + "{} {}".format(key, value, ))
+        print(Fore.RED + "SSD list:")
         for ssd in ssds:
-            print("Slot: {}  Model: {}".format(ssd["slot"], ssd["model"], ))
+            print(Fore.RED + "Slot: {}  Model: {}".format(ssd["slot"], ssd["model"], ))
         return
     for key, value in inconsist.items():
          if key != list(ssd_pns[ssd_choice].values())[0]:
-            print("Error, wrong ssd model  for {} (was found \"{}\" while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
+            print(Fore.RED + "Error, wrong ssd model  for {} (was found \"{}\" while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
             return
 
-    print("Found {} devices \n".format(len(ssds)))
+    print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
     # verify drives consistency
 
 
@@ -105,7 +105,7 @@ def start_verify(ssd_choice):
                                     "is_passed": is_passed}
 
                                )
-
+    #final result record
     for result in results:
         record = "SN: {0}, Smart att: {1}, Allowed value >{2}, Drive value: {3}, Slot:{4}, Passed: {5}".format(
             result['serial_number'],
@@ -115,7 +115,7 @@ def start_verify(ssd_choice):
             result['slot'],
             result['is_passed']
         )
-
+        #writing log
         logging.info(record)
         if result['is_passed']:
             print(Fore.GREEN + record)
@@ -146,7 +146,7 @@ if __name__ == '__main__':
             print("{}: {} ({})".format(x,list(y.keys())[0],list(y.values())[0]))
         print("_"*50)
         print("\n")
-        print("Select SSD type(1-11): \n")
+        print("Select SSD type(1-{}): \n".format(len(ssd_pns)))
         ssd_choice = int(input())
 
         if ssd_choice in ssd_pns.keys():
