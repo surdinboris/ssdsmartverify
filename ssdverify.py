@@ -18,9 +18,10 @@ ssd_pns = {1:{"SSD-00001-A": "MTFDDAK960MAV"},
            11:{"HDD-TEST-01":"Hitachi HUA72101"}
            }
 
-
 def start_verify(ssd_choice):
-    print("Starting wearout verification for: " + "{} ({}) \n".format(list(ssd_pns[ssd_choice].keys())[0],
+    errors=[]
+    results=[]
+    print("Starting verification for: " + "{} ({}) \n".format(list(ssd_pns[ssd_choice].keys())[0],
                                                                    list(ssd_pns[ssd_choice].values())[0]))
     # logging.basicConfig(filename='ssd_verify_{}.log'.format(now.strftime("%d-%m-%Y-%H-%M")),level=logging.DEBUG)
 
@@ -32,6 +33,7 @@ def start_verify(ssd_choice):
     # re_smart_attr foe smartctl
     re_smart_attr = re.compile(
         '^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?$')
+    re_serial_numb=re.compile('^Serial\s+Number:\s+(\w*)\s*$')
 
     # matching lsscsi
     # fake data
@@ -58,12 +60,16 @@ def start_verify(ssd_choice):
     #checking ssds of the same pn - in cas of inconsistency - interrupting
     if len(inconsist) > 1:
         print("Error: found different models in batch. Please check inconsistent data:")
-        for key, value in inconsist:
+        for key, value in inconsist.items():
             print("{} {}".format(key, value, ))
         print("SSD list:")
         for ssd in ssds:
             print("Slot: {}  Model: {}".format(ssd["slot"], ssd["model"], ))
         return
+    for key, value in inconsist.items():
+         if key != list(ssd_pns[ssd_choice].values())[0]:
+            print("Error, wrong ssd model  for {} (was found \"{}\" while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
+            return
 
     print("Found {} devices \n".format(len(ssds)))
     # verify drives consistency
@@ -74,18 +80,28 @@ def start_verify(ssd_choice):
         # subprocess part
         smart_atts = subprocess.run(["smartctl", "-x", ssd['device']], stdout=subprocess.PIPE)
         smart_atts_matched = [re_smart_attr.match(row) for row in smart_atts.stdout.decode().split("\n")]
+        serial_number_matched = [re_serial_numb.match(row) for row in smart_atts.stdout.decode().split("\n")]
+        ssd['serial_number'] = list(filter(lambda x: x != None, serial_number_matched))[0][1]
         filtered_smart_atts = list(filter(lambda x: x != None, smart_atts_matched))
         # validation if smart attr was found for drive type
         attributes_for_check = verif_attributes[ssd['vendor']]
         for smart_att in filtered_smart_atts:
-            attr_name = smart_att[2]
+            attribute = smart_att[2]
             checking_value = int(smart_att[4])
-            if attr_name in attributes_for_check:
-                passing_value = attributes_for_check[attr_name]
-                attr_passed = checking_value >= passing_value
-                ssd['sn']='SNSNSN'
-                print("SN: {}, Smart att: {}, Allowed > {}, Drive value: {}, Passed: {}"
-                      .format(ssd['sn'],attr_name, passing_value, checking_value, attr_passed))
+            if attribute in attributes_for_check:
+                passing_value = attributes_for_check[attribute]
+                is_passed = checking_value >= passing_value
+                results.append({"serial_number": ssd['serial_number'],
+                                   "attribute": attribute,
+                                    "passing_value": passing_value,
+                                    "checking_value": checking_value,
+                                    "is_passed": is_passed}
+                               )
+    for result in results:
+        print("SN: {}, Smart att: {}, Allowed value >{}, Drive value: {}, Passed: {}"
+              .format(result['serial_number'], result['attribute'],
+                      result['passing_value'], result['checking_value'],
+                      result['is_passed']))
 
 
                 # print(list(map(lambda x: filtered_smart_atts[x] == smart_att[1] ,filtered_smart_atts)))
