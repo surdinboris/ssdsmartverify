@@ -5,6 +5,7 @@ from colorama import Fore, init
 init(autoreset=True)
 import re
 debug= True
+
 verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100,"Current_Pending_Sector":110}}
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
@@ -24,7 +25,9 @@ def start_verify(ssd_choice):
     results=[]
     print("Starting verification for: " + "{} ({}) \n".format(list(ssd_pns[ssd_choice].keys())[0],
                                                                    list(ssd_pns[ssd_choice].values())[0]))
-    logging.basicConfig(filename='ssd_verify_{}.log'.format(datetime.now().strftime("%d-%m-%Y-%H-%M")),level=logging.DEBUG)
+    logging.basicConfig(filename='ssd_verify_{}.log'.format(datetime.now().strftime("%d-%m-%Y-%H-%M")),
+                        level=logging.DEBUG,
+                        format='%(message)s')
     logging.info("Started verification {}".format(datetime.now().strftime("%d-%m-%Y-%H-%M"), list(ssd_pns[ssd_choice].keys())[0]))
     # required_ssd_attrs = [...]int{ 233 }
     # rows from iscsi
@@ -121,25 +124,26 @@ def start_verify(ssd_choice):
                 #     print(re_smart_attr.match(row))
 
     print("Process finished.")
+    input("Press Enter to continue or ctrl-c to exit...")
     print("*"*100)
-    print("\n"*3)
 
 #starting
-print("\n"*2)
-print("Availalable SSD's:")
-print("_"*50)
-print("\n")
-for x, y in ssd_pns.items():
-    print("{}: {} ({})".format(x,list(y.keys())[0],list(y.values())[0]))
-print("_"*50)
-print("\n")
-while True:
-    print("Select SSD type(1-11): \n")
-    ssd_choice = int(input())
-
-    if ssd_choice in ssd_pns.keys():
+if __name__ == '__main__':
+    while True:
+        print("\n"*2)
+        print("Availalable SSD's:")
+        print("_"*50)
         print("\n")
-        start_verify(ssd_choice)
+        for x, y in ssd_pns.items():
+            print("{}: {} ({})".format(x,list(y.keys())[0],list(y.values())[0]))
+        print("_"*50)
+        print("\n")
+        print("Select SSD type(1-11): \n")
+        ssd_choice = int(input())
 
-    else:
-        print('Please enter a valid choise')
+        if ssd_choice in ssd_pns.keys():
+            print("\n")
+            start_verify(ssd_choice)
+
+        else:
+            print('Please enter a valid choise')
