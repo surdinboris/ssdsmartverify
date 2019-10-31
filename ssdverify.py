@@ -1,10 +1,11 @@
 import subprocess
 from datetime import *
 import logging
-from colorama import Fore, init
-init(autoreset=True)
+from colorama import Fore, init as coloramainit
 import re
-debug= True
+
+coloramainit(autoreset=True)
+debug = False
 
 verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100,"Current_Pending_Sector":110}}
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
@@ -17,7 +18,7 @@ ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
            9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
-           11: {"HDD-TEST-01":"Hitachi HUA72101"}
+           11: {"HDD-TEST-01":"Hitachi HUA721010"}
            }
 
 def start_verify(ssd_choice):
@@ -100,14 +101,20 @@ def start_verify(ssd_choice):
                                    "attribute": attribute,
                                     "passing_value": passing_value,
                                     "checking_value": checking_value,
+                                    "slot": ssd['slot'],
                                     "is_passed": is_passed}
+
                                )
+
     for result in results:
-        record = "SN: {}, Smart att: {}, Allowed value >{}, Drive value: {}, Passed: {}".format(
+        record = "SN: {0}, Smart att: {1}, Allowed value >{2}, Drive value: {3}, Slot:{4}, Passed: {5}".format(
             result['serial_number'],
             result['attribute'],
-            result['passing_value'], result['checking_value'],
-            result['is_passed'])
+            result['passing_value'],
+            result['checking_value'],
+            result['slot'],
+            result['is_passed']
+        )
 
         logging.info(record)
         if result['is_passed']:
@@ -115,13 +122,14 @@ def start_verify(ssd_choice):
         else:
             print(Fore.RED + record)
 
-
-                # print(list(map(lambda x: filtered_smart_atts[x] == smart_att[1] ,filtered_smart_atts)))
-
-                # #regex test
-                # for row in smartctltest.split("\n"):
-                #     print(row)
-                #     print(re_smart_attr.match(row))
+    if debug == True:
+        print("*"*40,'Debug',"*"*40)
+        for ssd in ssds:
+            print(ssd)
+        print("-"*40)
+        for result in results:
+            print(result)
+        print("*" * 40, 'Debug',"*" * 40)
 
     print("Process finished.")
     input("Press Enter to continue or ctrl-c to exit...")
