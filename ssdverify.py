@@ -41,10 +41,7 @@ def start_verify(ssd_choice):
     #serial number
     re_serial_numb=re.compile('^Serial\s+Number:\s+(\w*)\s*$')
 
-    # matching lsscsi
-    # fake data
-    # lsscsi_results = [re_lsscsi_local_drive_dev.match(row) for row in lsscsitest]
-
+    #lsscsi
     lsscsi_scan = subprocess.run(["lsscsi"], stdout=subprocess.PIPE)
     lsscsi_decoded = [re_lsscsi_local_drive_dev.match(row) for row in lsscsi_scan.stdout.decode().split("\n")]
 
@@ -85,6 +82,7 @@ def start_verify(ssd_choice):
     for ssd in ssds:
         # subprocess part
         smart_atts = subprocess.run(["smartctl", "-x", ssd['device']], stdout=subprocess.PIPE)
+        #processing output (filtering regex's None rows and getting capturing group data)
         smart_atts_matched = [re_smart_attr.match(row) for row in smart_atts.stdout.decode().split("\n")]
         serial_number_matched = [re_serial_numb.match(row) for row in smart_atts.stdout.decode().split("\n")]
         ssd['serial_number'] = list(filter(lambda x: x != None, serial_number_matched))[0][1]
