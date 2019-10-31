@@ -1,9 +1,11 @@
 import subprocess
 from datetime import *
 import logging
+from colorama import Fore, init
+init(autoreset=True)
 import re
 debug= True
-verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100,"Current_Pending_Sector":100}}
+verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100,"Current_Pending_Sector":110}}
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
            3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
@@ -105,7 +107,10 @@ def start_verify(ssd_choice):
             result['is_passed'])
 
         logging.info(record)
-        print(record)
+        if result['is_passed']:
+            print(Fore.GREEN + record)
+        else:
+            print(Fore.RED + record)
 
 
                 # print(list(map(lambda x: filtered_smart_atts[x] == smart_att[1] ,filtered_smart_atts)))
