@@ -2,20 +2,19 @@ import subprocess
 from datetime import *
 import logging
 import re
-now = datetime.now()
 debug= True
 verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100,"Current_Pending_Sector":100}}
-ssd_pns = {1:{"SSD-00001-A": "MTFDDAK960MAV"},
-           2:{"SSD-00002-A": "INTEL SSDSC2BB016T401"},
-           3:{"SSD-00017-A": "INTEL SSDSC2KB019T7"},
-           4:{"SSD-00037-0": "INTEL SSDSC2KB019T801"},
-           5:{"SSD-00042-0": "400-BDOD"},
-           6:{"SSD-00110-A": "SATA 6G PM863A"},
-           7:{"SSD-00111-A": "SAMSUNG MZ7LM1T9HMJP00005DJ"},
-           8:{"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
-           9:{"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
-           10:{"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
-           11:{"HDD-TEST-01":"Hitachi HUA72101"}
+ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
+           2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
+           3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
+           4: {"SSD-00037-0": "INTEL SSDSC2KB019T801"},
+           5: {"SSD-00042-0": "400-BDOD"},
+           6: {"SSD-00110-A": "SATA 6G PM863A"},
+           7: {"SSD-00111-A": "SAMSUNG MZ7LM1T9HMJP00005DJ"},
+           8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
+           9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
+           10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
+           11: {"HDD-TEST-01":"Hitachi HUA72101"}
            }
 
 def start_verify(ssd_choice):
@@ -23,8 +22,8 @@ def start_verify(ssd_choice):
     results=[]
     print("Starting verification for: " + "{} ({}) \n".format(list(ssd_pns[ssd_choice].keys())[0],
                                                                    list(ssd_pns[ssd_choice].values())[0]))
-    # logging.basicConfig(filename='ssd_verify_{}.log'.format(now.strftime("%d-%m-%Y-%H-%M")),level=logging.DEBUG)
-
+    logging.basicConfig(filename='ssd_verify_{}.log'.format(datetime.now().strftime("%d-%m-%Y-%H-%M")),level=logging.DEBUG)
+    logging.info("Started verification {}".format(datetime.now().strftime("%d-%m-%Y-%H-%M"), list(ssd_pns[ssd_choice].keys())[0]))
     # required_ssd_attrs = [...]int{ 233 }
     # rows from iscsi
     re_lsscsi_local_drive_dev = re.compile(
@@ -33,6 +32,7 @@ def start_verify(ssd_choice):
     # re_smart_attr foe smartctl
     re_smart_attr = re.compile(
         '^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?$')
+    #serial number
     re_serial_numb=re.compile('^Serial\s+Number:\s+(\w*)\s*$')
 
     # matching lsscsi
@@ -98,10 +98,14 @@ def start_verify(ssd_choice):
                                     "is_passed": is_passed}
                                )
     for result in results:
-        print("SN: {}, Smart att: {}, Allowed value >{}, Drive value: {}, Passed: {}"
-              .format(result['serial_number'], result['attribute'],
-                      result['passing_value'], result['checking_value'],
-                      result['is_passed']))
+        record = "SN: {}, Smart att: {}, Allowed value >{}, Drive value: {}, Passed: {}".format(
+            result['serial_number'],
+            result['attribute'],
+            result['passing_value'], result['checking_value'],
+            result['is_passed'])
+
+        logging.info(record)
+        print(record)
 
 
                 # print(list(map(lambda x: filtered_smart_atts[x] == smart_att[1] ,filtered_smart_atts)))
