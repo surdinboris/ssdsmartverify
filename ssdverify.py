@@ -8,6 +8,56 @@ verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100,"Current_Pending_
 
 #logging.basicConfig(filename='ssd_verify_{}.log'.format(now.strftime("%d-%m-%Y-%H-%M")),level=logging.DEBUG)
 
+#required_ssd_attrs = [...]int{ 233 }
+#rows from iscsi
+re_lsscsi_local_drive_dev = re.compile('^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|PERC H710P|Hitachi).*\s+(/dev/\w+)\s*$')
+
+#re_smart_attr foe smartctl
+re_smart_attr = re.compile('^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?$')
+
+
+# matching lsscsi
+# fake data
+# lsscsi_results = [re_lsscsi_local_drive_dev.match(row) for row in lsscsitest]
+
+lsscsi_scan = subprocess.run(["lsscsi"], stdout=subprocess.PIPE)
+lsscsi_decoded=[re_lsscsi_local_drive_dev.match(row) for row in lsscsi_scan.stdout.decode().split("\n")]
+
+filtered_ssd_devs= list(filter(lambda x: x != None, lsscsi_decoded))
+
+def getdrivedata(ssd):
+    return {"device":ssd[3],"slot":ssd[1],"vendor":ssd[2]}
+
+ssds=list(map(getdrivedata,filtered_ssd_devs))
+
+print("Found {} devices".format(len(ssds)))
+
+#get smart atts
+
+for ssd in ssds:
+    #subprocess part
+    smart_atts = subprocess.run(["smartctl", "-x", ssd['device']], stdout=subprocess.PIPE)
+    smart_atts_matched = [re_smart_attr.match(row) for row in smart_atts.stdout.decode().split("\n")]
+    filtered_smart_atts = list(filter(lambda x: x != None, smart_atts_matched))
+    #validation if smart attr was found for drive type
+    attributes_for_check= verif_attributes[ssd['vendor']]
+    for smart_att in filtered_smart_atts:
+        attr_name= smart_att[2]
+        value= smart_att[4]
+        if attr_name in attributes_for_check:
+            attr_passed = int(value) >= attributes_for_check[attr_name]
+            print(attr_name, attr_passed)
+
+
+        #print(list(map(lambda x: filtered_smart_atts[x] == smart_att[1] ,filtered_smart_atts)))
+
+# #regex test
+# for row in smartctltest.split("\n"):
+#     print(row)
+#     print(re_smart_attr.match(row))
+
+
+
 lsscsitest="""[0:0:0:0]    disk    SEAGATE  ST1200MM0099     ST31  /dev/sda
 [0:0:1:0]    disk    SEAGATE  ST1200MM0099     ST31  /dev/sdb
 [0:0:2:0]    disk    SEAGATE  ST1200MM0099     ST31  /dev/sdc
@@ -348,51 +398,3 @@ ID      Size     Value  Description
 0x0010  2            0  R_ERR response for host-to-device data FIS, non-CRC
 0x0012  2            0  R_ERR response for host-to-device non-data FIS, CRC
 0x0013  2            0  R_ERR response for host-to-device non-data FIS, non-CRC"""
-
-#required_ssd_attrs = [...]int{ 233 }
-#rows from iscsi
-re_lsscsi_local_drive_dev = re.compile('^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|PERC H710P|Hitachi).*\s+(/dev/\w+)\s*$')
-
-#re_smart_attr foe smartctl
-re_smart_attr = re.compile('^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?$')
-
-
-# matching lsscsi
-# fake data
-# lsscsi_results = [re_lsscsi_local_drive_dev.match(row) for row in lsscsitest]
-
-lsscsi_scan = subprocess.run(["lsscsi"], stdout=subprocess.PIPE)
-lsscsi_decoded=[re_lsscsi_local_drive_dev.match(row) for row in lsscsi_scan.stdout.decode().split("\n")]
-
-filtered_ssd_devs= list(filter(lambda x: x != None, lsscsi_decoded))
-
-def getdrivedata(ssd):
-    return {"device":ssd[3],"slot":ssd[1],"vendor":ssd[2]}
-
-ssds=list(map(getdrivedata,filtered_ssd_devs))
-
-print("Found {} devices".format(len(ssds)))
-
-#get smart atts
-
-for ssd in ssds:
-    #subprocess part
-    smart_atts = subprocess.run(["smartctl", "-x", ssd['device']], stdout=subprocess.PIPE)
-    smart_atts_matched = [re_smart_attr.match(row) for row in smart_atts.stdout.decode().split("\n")]
-    filtered_smart_atts = list(filter(lambda x: x != None, smart_atts_matched))
-    #validation if smart attr was found for drive type
-    attributes_for_check= verif_attributes[ssd['vendor']]
-    for smart_att in filtered_smart_atts:
-        attr_name= smart_att[2]
-        value= smart_att[4]
-        if attr_name in attributes_for_check:
-            attr_passed = int(value) >= attributes_for_check[attr_name]
-            print(attr_name, attr_passed)
-
-
-        #print(list(map(lambda x: filtered_smart_atts[x] == smart_att[1] ,filtered_smart_atts)))
-
-# #regex test
-# for row in smartctltest.split("\n"):
-#     print(row)
-#     print(re_smart_attr.match(row))
