@@ -4,10 +4,11 @@ import logging
 from colorama import Fore, init as coloramainit
 import re
 import time
+import os
 coloramainit(autoreset=True)
 debug = False
 
-verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":100}}
+verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":110}}
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
            3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
@@ -72,7 +73,6 @@ def start_verify(ssd_choice):
     for key, value in inconsist.items():
          if key != list(ssd_pns[ssd_choice].values())[0]:
             print(Fore.RED + "Error, wrong ssd model  for {} ( \"{}\" was found while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
-            time.sleep(2)
             return
 
     print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
@@ -108,6 +108,8 @@ def start_verify(ssd_choice):
 
                                )
     #final result record
+    print('Scan Results:')
+    print('-'*80)
     for result in results:
         record = "SN: {0}, Smart att: {1}, Allowed value >{2}, Drive value: {3}, Slot:{4}, Passed: {5}".format(
             result['serial_number'],
@@ -123,6 +125,7 @@ def start_verify(ssd_choice):
             print(Fore.GREEN + record)
         else:
             print(Fore.RED + record)
+    print('-' * 80)
     # calculating failed/passed ssds
     failed=[]
     try:
@@ -141,30 +144,35 @@ def start_verify(ssd_choice):
         print('failed', failed)
         print("*" * 40, 'Debug',"*" * 40)
 
+    finish_color = Fore.GREEN
+    if len(failed):
+        finish_color = Fore.RED
 
-
-    print("Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
+    print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
     input("Press Enter to continue or ctrl-c to exit...")
     print("*"*100)
-    time.sleep(2)
 
 #starting
 if __name__ == '__main__':
     while True:
+        os.system('clear')
         print("\n")
         print("Available SSD type for verification:")
-        print("_"*50)
+        print("-"*80)
         print("\n")
         for x, y in ssd_pns.items():
             print("{}: {} ({})".format(x,list(y.keys())[0],list(y.values())[0]))
-        print("_"*50)
+        print("-"*80)
         print("\n")
-        print("Select SSD type(1-{}): \n".format(len(ssd_pns)))
-        ssd_choice = int(input())
-
-        if ssd_choice in ssd_pns.keys():
+        print("Choose SSD type(1-{}): \n".format(len(ssd_pns)))
+        while True:
+            try:
+                ssd_choice = int(input())
+                break
+            except ValueError:
+                print("Enter a digit number from 1 to {} and press Enter\n".format(len(ssd_pns)))
+        if ssd_pns.keys():
             print("\n")
             start_verify(ssd_choice)
-
         else:
             print('Please enter a valid choice')
