@@ -7,7 +7,7 @@ import time
 coloramainit(autoreset=True)
 debug = False
 
-verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":110}}
+verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":100}}
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
            3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
@@ -96,6 +96,9 @@ def start_verify(ssd_choice):
             if attribute in attributes_for_check:
                 passing_value = attributes_for_check[attribute]
                 is_passed = checking_value >= passing_value
+                #updating ssd status in case of failure
+                if not is_passed:
+                    ssd['failed']= True
                 results.append({"serial_number": ssd['serial_number'],
                                    "attribute": attribute,
                                     "passing_value": passing_value,
@@ -120,7 +123,14 @@ def start_verify(ssd_choice):
             print(Fore.GREEN + record)
         else:
             print(Fore.RED + record)
+    # calculating failed/passed ssds
+    failed=[]
+    try:
+        failed = list(filter(lambda x: x['failed'] == True, ssds))
+    except KeyError:
+        pass
 
+    #debug
     if debug == True:
         print("*"*40,'Debug',"*"*40)
         for ssd in ssds:
@@ -128,9 +138,12 @@ def start_verify(ssd_choice):
         print("-"*40)
         for result in results:
             print(result)
+        print('failed', failed)
         print("*" * 40, 'Debug',"*" * 40)
 
-    print("Process finished.")
+
+
+    print("Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
     input("Press Enter to continue or ctrl-c to exit...")
     print("*"*100)
     time.sleep(2)
