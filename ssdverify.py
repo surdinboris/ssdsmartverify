@@ -61,7 +61,7 @@ def start_verify(ssd_choice):
 
     ssds = list(map(getdrivedata, filtered_ssd_devs))
 
-    #checking ssds of the same pn - in cas of inconsistency - interrupting
+    #verifying ssds of the same pn (redundant with next verification, but makes things more clear)
     if len(inconsist) > 1:
         print(Fore.RED + "Error: found different models in one batch. Please check inconsistent data:")
         for key, value in inconsist.items():
@@ -69,7 +69,8 @@ def start_verify(ssd_choice):
         print(Fore.RED + "SSD list:")
         for ssd in ssds:
             print(Fore.RED + "Slot: {}  Model: {}".format(ssd["slot"], ssd["model"], ))
-        return
+
+    # checking ssds for valid PN
     for key, value in inconsist.items():
          if key != list(ssd_pns[ssd_choice].values())[0]:
             print(Fore.RED + "Error, wrong ssd model  for {} ( \"{}\" was found while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
@@ -149,8 +150,7 @@ def start_verify(ssd_choice):
         finish_color = Fore.RED
 
     print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
-    input("Press Enter to continue or ctrl-c to exit...")
-    print("*"*100)
+
 
 #starting
 if __name__ == '__main__':
@@ -176,3 +176,5 @@ if __name__ == '__main__':
             start_verify(ssd_choice)
         else:
             print('Please enter a valid choice')
+        input("Press Enter to continue or ctrl-c to exit...")
+        print("*" * 100)
