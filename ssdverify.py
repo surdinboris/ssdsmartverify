@@ -168,8 +168,9 @@ if __name__ == '__main__':
         while True:
             try:
                 ssd_choice = int(input())
+                tryout = ssd_pns[ssd_choice]
                 break
-            except ValueError:
+            except (ValueError, KeyError):
                 print("Enter a digit number from 1 to {} and press Enter\n".format(len(ssd_pns)))
         if ssd_pns.keys():
             print("\n")
