@@ -1,0 +1,2 @@
+[13:0:1:0]   disk    ATA      INTEL SSDSC2KB01 0121  /dev/sdc
+[13:0:0:0]   enclosu NEWISYS  NDS-4600-JD      0512  -

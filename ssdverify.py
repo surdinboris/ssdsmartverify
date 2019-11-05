@@ -8,10 +8,14 @@ import os
 coloramainit(autoreset=True)
 debug = False
 
-verif_attributes = {'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":110}}
+verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 100},
+                    'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":110},
+                    'Micron':{'Media_Wearout_Indicator': 100},
+                    'SAMSUNG':{'Media_Wearout_Indicator': 100}}
+
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
-           3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
+           3: {"SSD-00017-A": "INTEL SSDSC2KB01"},
            4: {"SSD-00037-0": "INTEL SSDSC2KB019T801"},
            5: {"SSD-00042-0": "400-BDOD"},
            6: {"SSD-00110-A": "SATA 6G PM863A"},
@@ -35,8 +39,8 @@ def start_verify(ssd_choice):
     # required_ssd_attrs = [...]int{ 233 }
     # rows from iscsi
     re_lsscsi_local_drive_dev = re.compile(
-        '^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|PERC H710P|Hitachi)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
-
+        '^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|PERC H710P|Hitachi|PERC H730 Mini|NDS-4600-JD)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
+    
     # re_smart_attr foe smartctl
     re_smart_attr = re.compile(
         '^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?$')
@@ -48,6 +52,8 @@ def start_verify(ssd_choice):
     lsscsi_decoded = [re_lsscsi_local_drive_dev.match(row) for row in lsscsi_scan.stdout.decode().split("\n")]
 
     filtered_ssd_devs = list(filter(lambda x: x != None, lsscsi_decoded))
+    if debug:
+        print(lsscsi_decoded)
 
     inconsist = {}
     def getdrivedata(ssd):
@@ -65,6 +71,7 @@ def start_verify(ssd_choice):
 
 
     ssds = list(map(getdrivedata, filtered_ssd_devs))
+
     #filtering skipped system ssds
     ssds = list(filter(lambda x: x != None, ssds))
 
@@ -98,6 +105,7 @@ def start_verify(ssd_choice):
         filtered_smart_atts = list(filter(lambda x: x != None, smart_atts_matched))
         # validation if smart attr was found for drive type
         attributes_for_check = verif_attributes[ssd['vendor']]
+
         for smart_att in filtered_smart_atts:
             attribute = smart_att[2]
             checking_value = int(smart_att[4])
