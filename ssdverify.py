@@ -36,7 +36,6 @@ def start_verify(ssd_choice):
                         level=logging.DEBUG,
                         format='%(message)s')
     logging.info("Started verification {}".format(datetime.now().strftime("%d-%m-%Y-%H-%M"), list(ssd_pns[ssd_choice].keys())[0]))
-    # required_ssd_attrs = [...]int{ 233 }
     # rows from iscsi
     re_lsscsi_local_drive_dev = re.compile(
         '^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|Hitachi|Micron)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
