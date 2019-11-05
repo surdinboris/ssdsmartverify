@@ -25,7 +25,7 @@ ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
            11: {"HDD-TEST-01": "Hitachi HUA72101"}
            }
-sysdrives=['/dev/sda', '/dev/sdb/', '/dev/sdc']
+
 
 def start_verify(ssd_choice):
     errors=[]
@@ -39,13 +39,16 @@ def start_verify(ssd_choice):
     # required_ssd_attrs = [...]int{ 233 }
     # rows from iscsi
     re_lsscsi_local_drive_dev = re.compile(
-        '^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|PERC H710P|Hitachi|PERC H730 Mini|NDS-4600-JD)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
+        '^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|Hitachi|Micron)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
     
     # re_smart_attr foe smartctl
     re_smart_attr = re.compile(
         '^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?$')
     #serial number
     re_serial_numb=re.compile('^Serial\s+Number:\s+(\w*)\s*$')
+
+    # model
+    re_device_model=re.compile('^(?:Device\sModel|Product):\s*(.*)$')
 
     #lsscsi
     lsscsi_scan = subprocess.run(["lsscsi"], stdout=subprocess.PIPE)
@@ -55,40 +58,18 @@ def start_verify(ssd_choice):
     if debug:
         print(lsscsi_decoded)
 
-    inconsist = {}
+
     def getdrivedata(ssd):
         #retrieving attributes
         device = ssd[5]
         slot = ssd[1]
-        vendor = ssd[2]
-        model = "{} {}".format(ssd[2], ssd[3])
-        # filtering system drives
-        if device in sysdrives:
-            return
-        #updating inconsistency data
-        inconsist[model] = slot
-        return {"device": device, "slot": slot, "vendor": vendor, "model": model}
+        vendor = ssd[2] #possibly need to refactor for micron
+        # model = "{} {}".format(ssd[2], ssd[3])
+        return {"device": device, "slot": slot, "vendor": vendor}
 
 
     ssds = list(map(getdrivedata, filtered_ssd_devs))
 
-    #filtering skipped system ssds
-    ssds = list(filter(lambda x: x != None, ssds))
-
-    #verifying ssds of the same pn (redundant with next verification, but makes things more clear)
-    if len(inconsist) > 1:
-        print(Fore.RED + "Error: found different models in one batch. Please check inconsistent data:")
-        for key, value in inconsist.items():
-            print(Fore.RED + "{} {}".format(key, value, ))
-        print(Fore.RED + "SSD list:")
-        for ssd in ssds:
-            print(Fore.RED + "Slot: {}  Model: {}".format(ssd["slot"], ssd["model"], ))
-
-    # checking ssds for valid PN
-    for key, value in inconsist.items():
-         if key != list(ssd_pns[ssd_choice].values())[0]:
-            print(Fore.RED + "Error, wrong ssd model  for {} ( \"{}\" was found while should be \"{}\")".format(list(ssd_pns[ssd_choice].keys())[0],key, list(ssd_pns[ssd_choice].values())[0]))
-            return
 
     print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
     # verify drives consistency
@@ -99,10 +80,32 @@ def start_verify(ssd_choice):
         # subprocess part
         smart_atts = subprocess.run(["smartctl", "-x", ssd['device']], stdout=subprocess.PIPE)
         #processing output (filtering regex's None rows and getting capturing group data)
+
         smart_atts_matched = [re_smart_attr.match(row) for row in smart_atts.stdout.decode().split("\n")]
+        filtered_smart_atts = list(filter(lambda x: x != None, smart_atts_matched))
+
         serial_number_matched = [re_serial_numb.match(row) for row in smart_atts.stdout.decode().split("\n")]
         ssd['serial_number'] = list(filter(lambda x: x != None, serial_number_matched))[0][1]
-        filtered_smart_atts = list(filter(lambda x: x != None, smart_atts_matched))
+
+        model_matched = [re_device_model.match(row) for row in smart_atts.stdout.decode().split("\n")]
+        ssd['model'] = list(filter(lambda x: x != None, model_matched))[0][1]
+
+        #check ssd model
+        if ssd['model'] != list(ssd_pns[ssd_choice].values())[0]:
+            ssd['failed'] = True
+            ssd['PN_ok'] = False
+            results.append({"serial_number": ssd['serial_number'],
+                            "slot": ssd['slot'],
+                            "is_passed": False,
+                            "PN_ok": ssd['PN_ok'],
+                            "wrong_PN_data": ssd['model']
+                            }
+                           )
+            #not processing wearout since ssd has wrong PN
+            continue
+
+        else:
+            ssd['PN_ok']=True
         # validation if smart attr was found for drive type
         attributes_for_check = verif_attributes[ssd['vendor']]
 
@@ -127,14 +130,23 @@ def start_verify(ssd_choice):
     print('Scan Results:')
     print('-'*80)
     for result in results:
-        record = "SN: {0}, Smart att: {1}, Allowed value >{2}, Drive value: {3}, Slot:{4}, Passed: {5}".format(
-            result['serial_number'],
-            result['attribute'],
-            result['passing_value'],
-            result['checking_value'],
-            result['slot'],
-            result['is_passed']
-        )
+        if not result['PN_ok']:
+            record = "SN: {0}, Slot:{1} - wrong PN {2} when {3} was selected for validation "\
+                .format(result['serial_number'],
+                        result['slot'],
+                        result['wrong_PN_data'],
+                        list(ssd_pns[ssd_choice].values())[0])
+
+        else:
+            record = "SN: {0}, Smart att: {1}, Allowed value >{2}, Drive value: {3}, Slot:{4}, Passed: {5}".format(
+                result['serial_number'],
+                result['attribute'],
+                result['passing_value'],
+                result['checking_value'],
+                result['slot'],
+                result['is_passed']
+            )
+
         #writing log
         logging.info(record)
         if result['is_passed']:
@@ -160,6 +172,7 @@ def start_verify(ssd_choice):
         print('failed', failed)
         print("*" * 40, 'Debug',"*" * 40)
 
+    #COLORING
     finish_color = Fore.GREEN
     if len(failed):
         finish_color = Fore.RED
