@@ -21,6 +21,7 @@ ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
            11: {"HDD-TEST-01": "Hitachi HUA72101"}
            }
+sysdrives=['/dev/sda', '/dev/sdb/', '/dev/sdc']
 
 def start_verify(ssd_choice):
     errors=[]
@@ -55,11 +56,17 @@ def start_verify(ssd_choice):
         slot = ssd[1]
         vendor = ssd[2]
         model = "{} {}".format(ssd[2], ssd[3])
+        # filtering system drives
+        if device in sysdrives:
+            return
         #updating inconsistency data
         inconsist[model] = slot
         return {"device": device, "slot": slot, "vendor": vendor, "model": model}
 
+
     ssds = list(map(getdrivedata, filtered_ssd_devs))
+    #filtering skipped system ssds
+    ssds = list(filter(lambda x: x != None, ssds))
 
     #verifying ssds of the same pn (redundant with next verification, but makes things more clear)
     if len(inconsist) > 1:
