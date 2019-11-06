@@ -57,11 +57,28 @@ def start_verify(ssd_choice):
     if debug:
         print(lsscsi_decoded)
 
+    def detect_phy_slot(sw_slot):
+
+        scsi_addr = '/sys/class/scsi_disk/{}\:{}\:{}\:{}/device'
+
+        addr_seq = sw_slot.split(':')
+
+        files = os.listdir( scsi_addr.format(*addr_seq))
+
+        re_enc_path = re.compile('^enclosure_device:SLOT\s+(\d{1,2})\s+.*$')
+
+        slot_matched = [re_enc_path.match(row) for row in files]
+
+        phy_slot = list(filter(lambda x: x != None, slot_matched))[0][1]
+
+        return phy_slot
+
 
     def getdrivedata(ssd):
         #retrieving attributes
         device = ssd[5]
-        slot = ssd[1]
+        #retrieving physical slot
+        slot = detect_phy_slot(ssd[1])
         vendor = ssd[2] #possibly need to refactor for micron
         # model = "{} {}".format(ssd[2], ssd[3])
         return {"device": device, "slot": slot, "vendor": vendor}
