@@ -1,36 +1,79 @@
 import subprocess
+import configparser
 from datetime import *
 import logging
 from colorama import Fore, init as coloramainit
 import re
 import os
 coloramainit(autoreset=True)
-debug = False
+
+
+def start_configuration():
+    configuration = {}
+    loaded_config = configparser.ConfigParser()
+    loaded_config.read('ssdverify.ini')
+    for item in ['DEBUG', 'ATTRIBUTES', 'PART NUMBERS']:
+        if item not in loaded_config.sections():
+            print('ssdverify.ini not found, creating predefined configuration')
+            return create_default_ini()
+    configuration['debug'] = loaded_config["DEBUG"]['debug']
+    configuration['ssd_pns'] = dict(loaded_config['PART NUMBERS'])
+    configuration['verif_attributes'] = dict(loaded_config['ATTRIBUTES'])
+
+    return configuration
+def create_default_ini():
+    new_config = configparser.ConfigParser()
+    debug = False
+    verif_attributes = {'INTEL': {'Media_Wearout_Indicator': 95},
+                        'Micron': {'Media_Wearout_Indicator': 95},
+                        'SAMSUNG': {'Media_Wearout_Indicator': 95}}
+
+    ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
+               2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
+               3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
+               4: {"SSD-00037-0": "INTEL SSDSC2KB019T801"},
+               5: {"SSD-00042-0": "400-BDOD"},
+               6: {"SSD-00110-A": "SATA 6G PM863A"},
+               7: {"SSD-00111-A": "SAMSUNG MZ7LM1T9HMJP00005DJ"},
+               8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
+               9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
+               10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
+               }
+    new_config['DEBUG'] = {'debug': False}
+
+    new_config['ATTRIBUTES'] = verif_attributes
+
+    new_config['PART NUMBERS'] = ssd_pns
+
+    with open('ssdverify.ini', 'w') as configfile:
+        new_config.write(configfile)
+    return {debug: debug, 'ssd_pns': ssd_pns, 'verif_attributes': verif_attributes}
 
 # IntelSSD wearoutSmartAttribute (233)
 # SamsungSSD wearoutSmartAttribute(177)
 
-verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 95},
-                    'Micron':{'Media_Wearout_Indicator': 95},
-                    'SAMSUNG':{'Media_Wearout_Indicator': 95}}
 
-ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
-           2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
-           3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
-           4: {"SSD-00037-0": "INTEL SSDSC2KB019T801"},
-           5: {"SSD-00042-0": "400-BDOD"},
-           6: {"SSD-00110-A": "SATA 6G PM863A"},
-           7: {"SSD-00111-A": "SAMSUNG MZ7LM1T9HMJP00005DJ"},
-           8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
-           9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
-           10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
-           }
+# verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 95},
+#                     'Micron':{'Media_Wearout_Indicator': 95},
+#                     'SAMSUNG':{'Media_Wearout_Indicator': 95}}
+#
+# ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
+#            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
+#            3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
+#            4: {"SSD-00037-0": "INTEL SSDSC2KB019T801"},
+#            5: {"SSD-00042-0": "400-BDOD"},
+#            6: {"SSD-00110-A": "SATA 6G PM863A"},
+#            7: {"SSD-00111-A": "SAMSUNG MZ7LM1T9HMJP00005DJ"},
+#            8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
+#            9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
+#            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
+#            }
 
 
-def start_verify(ssd_choice):
-    errors=[]
+def start_verify(ssd_choice,**kwargs):
+    print(kwargs)
     results=[]
-    print("Starting verification for: " + "{} ({}) \n".format(list(ssd_pns[ssd_choice].keys())[0],
+    print("Starting verification for: " + "{} ({}) \n".format(list(kwargs.ssd_pns[ssd_choice].keys())[0],
                                                                    list(ssd_pns[ssd_choice].values())[0]))
     logging.basicConfig(filename='ssd_verify_{}.log'.format(datetime.now().strftime("%d-%m-%Y-%H-%M")),
                         level=logging.DEBUG,
@@ -197,6 +240,9 @@ def start_verify(ssd_choice):
 #starting
 if __name__ == '__main__':
     while True:
+        configuration= start_configuration()
+        ssd_pns= configuration['ssd_pns']
+        print(ssd_pns)
         os.system('clear')
         print("\n")
         print("Available SSD type for verification:")
