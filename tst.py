@@ -22,13 +22,15 @@ addr_seq =  "0:0:129:0".split(':')
 
 drive_path = scsi_addr.format(*addr_seq)
 
-tst_path = "/Users/borissurdin/Documents/github/ssdsmartverify/device_br/"
+tst_path = "/gitrep/ssdsmartverify/device_br/"
 
 files = os.listdir(tst_path)
-
+print(files)
 re_enc_path=re.compile('^enclosure_device:SLOT\s+(\d{1,2})\s+.*$')
 
 slot_matched = [re_enc_path.match(row) for row in files]
+
+print(list(filter(lambda x: x != None, slot_matched)))
 
 slot = list(filter(lambda x: x != None, slot_matched))[0][1]
 print(slot)

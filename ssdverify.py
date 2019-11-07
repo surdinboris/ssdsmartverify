@@ -8,10 +8,10 @@ import os
 coloramainit(autoreset=True)
 debug = False
 
-verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 100},
-                    'Hitachi': {"Reallocated_Event_Count": 100, "Current_Pending_Sector":110},
-                    'Micron':{'Media_Wearout_Indicator': 100},
-                    'SAMSUNG':{'Media_Wearout_Indicator': 100}}
+verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 93},
+                    'Hitachi': {"Reallocated_Event_Count": 93, "Current_Pending_Sector":110},
+                    'Micron':{'Media_Wearout_Indicator': 93},
+                    'SAMSUNG':{'Media_Wearout_Indicator': 93}}
 
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
@@ -38,7 +38,7 @@ def start_verify(ssd_choice):
     logging.info("Started verification {}".format(datetime.now().strftime("%d-%m-%Y-%H-%M"), list(ssd_pns[ssd_choice].keys())[0]))
     # rows from iscsi
     re_lsscsi_local_drive_dev = re.compile(
-        '^\[[0-9]+:[0-9]:([0-9]+):[0-9]\]\s+.*(SAMSUNG|INTEL|Hitachi|Micron)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
+        '^\[([0-9]+:[0-9]:[0-9]+:[0-9])\]\s+.*(SAMSUNG|INTEL|Hitachi|Micron)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
     
     # re_smart_attr foe smartctl
     re_smart_attr = re.compile(
@@ -59,18 +59,20 @@ def start_verify(ssd_choice):
 
     def detect_phy_slot(sw_slot):
 
-        scsi_addr = '/sys/class/scsi_disk/{}\:{}\:{}\:{}/device'
-
+        scsi_addr = '/sys/class/scsi_disk/{}:{}:{}:{}/device'
         addr_seq = sw_slot.split(':')
 
-        files = os.listdir( scsi_addr.format(*addr_seq))
+
+        files = os.listdir(scsi_addr.format(*addr_seq))
+
 
         re_enc_path = re.compile('^enclosure_device:SLOT\s+(\d{1,2})\s+.*$')
 
         slot_matched = [re_enc_path.match(row) for row in files]
-
-        phy_slot = list(filter(lambda x: x != None, slot_matched))[0][1]
-
+        try:
+            phy_slot = list(filter(lambda x: x != None, slot_matched))[0][1]
+        except IndexError:
+            phy_slot = "NA"
         return phy_slot
 
 
@@ -223,125 +225,3 @@ if __name__ == '__main__':
             print('Please enter a valid choice')
         input("Press Enter to continue or ctrl-c to exit...")
         print("*" * 100)
-
-
-"""Slot detetection
-lsscsi 
-
-cd \sys\class\scsi_disk
-
-0:2:0:0
-13:0:4:0
-13:0:8:0
-
-cd  /sys/class/scsi_disk/13\:0\:6\:0/device
-
-
-ls
-
-
-block
-bsg
-driver
-"enclosure_device:SLOT 12 0B  "
-generic
-power
-scsi_device
-scsi_disk
-scsi_generic
-subsystem
-delete
-device_blocked
-device_busy
-dh_state
-eh_timeout
-evt_capacity_change_reported
-evt_inquiry_change_reported
-evt_lun_change_reported
-evt_media_change
-evt_mode_parameter_change_reported
-evt_soft_threshold_reached
-inquiry
-iocounterbits
-iodone_cnt
-ioerr_cnt
-iorequest_cnt
-modalias
-model
-queue_depth
-queue_ramp_up_period
-queue_type
-rescan
-rev
-sas_address
-sas_device_handle
-scsi_level
-state
-timeout
-type
-uevent
-unpriv_sgio
-vendor
-vpd_pg80
-vpd_pg83
-wwid
-
-
-
-
-
-
-
-
-
-
-
-
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/block/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/bsg/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/driver/
-"/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/enclosure_device:SLOT 12 0B  /"
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/generic/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/power/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/scsi_device/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/scsi_disk/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/scsi_generic/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/subsystem/
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/delete
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/device_blocked
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/device_busy
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/dh_state
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/eh_timeout
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/evt_capacity_change_reported
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/evt_inquiry_change_reported
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/evt_lun_change_reported
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/evt_media_change
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/evt_mode_parameter_change_reported
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/evt_soft_threshold_reached
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/inquiry
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/iocounterbits
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/iodone_cnt
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/ioerr_cnt
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/iorequest_cnt
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/modalias
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/model
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/queue_depth
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/queue_ramp_up_period
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/queue_type
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/rescan
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/rev
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/sas_address
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/sas_device_handle
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/scsi_level
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/state
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/timeout
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/type
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/uevent
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/unpriv_sgio
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/vendor
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/vpd_pg80
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/vpd_pg83
-/sys/devices/pci0000:00/0000:00:03.2/0000:09:00.0/host13/port-13:1/expander-13:3/port-13:3:3/expander-13:5/port-13:5:1/end_device-13:5:1/target13:0:8/13:0:8:0/wwid
-
-
-"""
