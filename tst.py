@@ -26,6 +26,7 @@ tst_path = "/gitrep/ssdsmartverify/device_br/"
 
 files = os.listdir(tst_path)
 print(files)
+#re_enc_path=re.compile('^enclosure_device:SLOT\s+(\d{1,2})\s+.*$')
 re_enc_path=re.compile('^enclosure_device:SLOT\s+(\d{1,2})\s+.*$')
 
 slot_matched = [re_enc_path.match(row) for row in files]

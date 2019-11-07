@@ -3,15 +3,16 @@ from datetime import *
 import logging
 from colorama import Fore, init as coloramainit
 import re
-import time
 import os
 coloramainit(autoreset=True)
 debug = False
 
-verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 93},
-                    'Hitachi': {"Reallocated_Event_Count": 93, "Current_Pending_Sector":110},
-                    'Micron':{'Media_Wearout_Indicator': 93},
-                    'SAMSUNG':{'Media_Wearout_Indicator': 93}}
+# IntelSSD wearoutSmartAttribute (233)
+# SamsungSSD wearoutSmartAttribute(177)
+
+verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 95},
+                    'Micron':{'Media_Wearout_Indicator': 95},
+                    'SAMSUNG':{'Media_Wearout_Indicator': 95}}
 
 ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
@@ -23,7 +24,6 @@ ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
            8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
            9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
-           11: {"HDD-TEST-01": "Hitachi HUA72101"}
            }
 
 
@@ -58,23 +58,16 @@ def start_verify(ssd_choice):
         print(lsscsi_decoded)
 
     def detect_phy_slot(sw_slot):
-
         scsi_addr = '/sys/class/scsi_disk/{}:{}:{}:{}/device'
         addr_seq = sw_slot.split(':')
-
-
         files = os.listdir(scsi_addr.format(*addr_seq))
-
-
         re_enc_path = re.compile('^enclosure_device:SLOT\s+(\d{1,2})\s+.*$')
-
         slot_matched = [re_enc_path.match(row) for row in files]
         try:
             phy_slot = list(filter(lambda x: x != None, slot_matched))[0][1]
         except IndexError:
             phy_slot = "NA"
         return phy_slot
-
 
     def getdrivedata(ssd):
         #retrieving attributes
@@ -136,7 +129,8 @@ def start_verify(ssd_choice):
                     if not is_passed:
                         ssd['failed']= True
                     results.append({"serial_number": ssd['serial_number'],
-                                       "attribute": attribute,
+                                        "PN": ssd['model'],
+                                        "attribute": attribute,
                                         "passing_value": passing_value,
                                         "checking_value": checking_value,
                                         "slot": ssd['slot'],
@@ -156,8 +150,10 @@ def start_verify(ssd_choice):
                         list(ssd_pns[ssd_choice].values())[0])
 
         else:
-            record = "SN: {0}, Smart att: {1}, Allowed value >{2}, Drive value: {3}, Slot:{4}, Passed: {5}".format(
+            record = "SN: {0}, PN:{1} ({2}), Smart att: {3}, Allowed value >{4}, Drive value: {5}, Slot:{6}, Passed: {7}".format(
                 result['serial_number'],
+                result['PN'],
+                list(ssd_pns[ssd_choice].keys())[0],
                 result['attribute'],
                 result['passing_value'],
                 result['checking_value'],
