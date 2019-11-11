@@ -53,28 +53,6 @@ def create_default_ini():
         new_config.write(configfile)
     return {debug: debug, 'ssd_pns': ssd_pns, 'verif_attributes': verif_attributes}
 
-
-# IntelSSD wearoutSmartAttribute (233)
-# SamsungSSD wearoutSmartAttribute(177)
-
-
-# verif_attributes = {'INTEL':{'Media_Wearout_Indicator': 95},
-#                     'Micron':{'Media_Wearout_Indicator': 95},
-#                     'SAMSUNG':{'Media_Wearout_Indicator': 95}}
-#
-# ssd_pns = {1: {"SSD-00001-A": "MTFDDAK960MAV"},
-#            2: {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
-#            3: {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
-#            4: {"SSD-00037-0": "INTEL SSDSC2KB019T801"},
-#            5: {"SSD-00042-0": "400-BDOD"},
-#            6: {"SSD-00110-A": "SATA 6G PM863A"},
-#            7: {"SSD-00111-A": "SAMSUNG MZ7LM1T9HMJP00005DJ"},
-#            8: {"SSD-00125-0": "SAMSUNG MZ7LH1T9HMLT-00005"},
-#            9: {"SSD-00139-0": "SAMSUNG MZ7LH7T6HMLA-00005"},
-#            10: {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
-#            }
-
-
 def start_verify(ssd_choice,config):
     config = start_configuration()
     ssd_pns=config['ssd_pns']
@@ -134,8 +112,9 @@ def start_verify(ssd_choice,config):
 
 
     print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
-    # verify drives consistency
 
+    #vendor will be evaluated in ssd loop
+    attributes_for_check = 0
 
     # get smart atts
     for ssd in ssds:
@@ -189,8 +168,8 @@ def start_verify(ssd_choice,config):
                                         "PN_ok": ssd['PN_ok'],}
 
                                    )
-    # final check if all required attributes were retieved for all drives
-    attr_amount_ok = len(results) == len(ssds) * len(attributes_for_check)
+    #in case of vendor and depending atts were retrieved
+
 
     #final result record
     print('Scan Results:')
@@ -242,12 +221,18 @@ def start_verify(ssd_choice,config):
 
     #COLORING
     finish_color = Fore.GREEN
-    if len(failed) or not attr_amount_ok:
-        finish_color = Fore.RED
-    if not attr_amount_ok:
-        print(finish_color + "Warning: not all SMART data was retrieved from SSD's. \n Please compare defined attribute name and  smartctl -x output for selected drive.")
+    #normal scenario when pn is right and smart was retrieved
+    if attributes_for_check != 0:
+        # final check if all required attributes were retieved for all drives
+        attr_amount_ok = len(results) == len(ssds) * len(attributes_for_check)
+        if len(failed):
+            finish_color = Fore.RED
+        if not attr_amount_ok:
+            finish_color = Fore.RED
+            print(Fore.finish_color + "Warning: not all SMART data was retrieved from SSD's. \n Please compare defined attribute name and  smartctl -x output for selected drive.")
     else:
-        print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
+        finish_color = Fore.RED
+    print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
 
 
 
