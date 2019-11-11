@@ -93,7 +93,7 @@ def start_verify(ssd_choice,config):
     
     # re_smart_attr foe smartctl
     re_smart_attr = re.compile(
-        '^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?$')
+        '^\s*([0-9]+)\s+([\w-]+)\s+([^\s]+)\s+([0-9]{3})\s+([0-9]{3})\s+([0-9]{3})\s+([^\s]+)\s+([0-9]+)(?:\s+)?(\(?:.+\))?.*$')
     #serial number
     re_serial_numb=re.compile('^Serial\s+Number:\s+(\w*)\s*$')
 
@@ -169,7 +169,6 @@ def start_verify(ssd_choice,config):
         else:
             ssd['PN_ok']=True
             # validation if smart attr was found for drive type
-
             attributes_for_check = verif_attributes[ssd['vendor'].lower()]
             for smart_att in filtered_smart_atts:
                 attribute = smart_att[2]
@@ -190,6 +189,9 @@ def start_verify(ssd_choice,config):
                                         "PN_ok": ssd['PN_ok'],}
 
                                    )
+    # final check if all required attributes were retieved for all drives
+    attr_amount_ok = len(results) == len(ssds) * len(attributes_for_check)
+
     #final result record
     print('Scan Results:')
     print('-'*80)
@@ -240,10 +242,12 @@ def start_verify(ssd_choice,config):
 
     #COLORING
     finish_color = Fore.GREEN
-    if len(failed):
+    if len(failed) or not attr_amount_ok:
         finish_color = Fore.RED
 
     print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
+    if not attr_amount_ok:
+        print(finish_color + "Warning: not all SMART data was retrieved from SSD's, please check smartctl -x output")
 
 
 #starting
