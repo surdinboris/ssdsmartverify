@@ -244,10 +244,11 @@ def start_verify(ssd_choice,config):
     finish_color = Fore.GREEN
     if len(failed) or not attr_amount_ok:
         finish_color = Fore.RED
-
-    print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
     if not attr_amount_ok:
-        print(finish_color + "Warning: not all SMART data was retrieved from SSD's, please check smartctl -x output")
+        print(finish_color + "Warning: not all SMART data was retrieved from SSD's. \n Please compare defined attribute name and  smartctl -x output for selected drive.")
+    else:
+        print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
+
 
 
 #starting
