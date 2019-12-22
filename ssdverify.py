@@ -36,7 +36,7 @@ def create_default_ini():
                         'SAMSUNG': {'Media_Wearout_Indicator': 95}}
 
     ssd_pns = {'1': {"SSD-00001-A": "MTFDDAK960MAV"},
-               '2': {"SSD-00002-A": "INTEL SSDSC2BB016T401"},
+               '2': {"SSD-00002-A": "INTEL SSDSC2BB016T4"},
                '3': {"SSD-00017-A": "INTEL SSDSC2KB019T7"},
                '4': {"SSD-00037-0": "INTEL SSDSC2KB019T801"},
                '5': {"SSD-00042-0": "400-BDOD"},
@@ -110,6 +110,7 @@ def start_verify(ssd_choice,config):
 
     ssds = list(map(getdrivedata, filtered_ssd_devs))
 
+    # point to insert slot detection
 
     print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
 
@@ -168,6 +169,11 @@ def start_verify(ssd_choice,config):
                                         "PN_ok": ssd['PN_ok'],}
 
                                    )
+    #sorting by slot
+    try:
+        results = sorted(results, key=lambda i: int(i['slot']))
+    except ValueError:
+        print('error retrieving slot data for ssd')
     #in case of vendor and depending atts were retrieved
 
 
