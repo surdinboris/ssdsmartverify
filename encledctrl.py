@@ -2,24 +2,8 @@ import subprocess
 import re
 import os
 
-ssds={"device": 'device', "slot": 'NA', "vendor": 'vendor'},{"device": 'device', "slot": 12, "vendor": 'vendor'}
+ssds=[{"device": 'device', "slot": 'NA', "vendor": 'vendor'},{"device": 'device', "slot": 12, "vendor": 'vendor'}]
 
-def check_populated_slots(ssds):
-    slot = 1
-    unpopulated=[]
-    while slot <= 60:
-        ssdok=False
-        for ssd in ssds:
-            if(slot== 'NA'):
-                break
-            if (int(ssd['slot']) == slot):
-                ssdok=True
-                slot += 1
-                break
-        if (not ssdok):
-            unpopulated.append(slot)
-            slot += 1
-    print(unpopulated)
 
 def check_populated_slots2(ssds):
     #generating slots array
@@ -27,9 +11,13 @@ def check_populated_slots2(ssds):
     unpopulated = []
     while slot <= 60:
         unpopulated.append(slot)
-    print(unpopulated)
+        slot+=1
     for ssd in ssds:
-        unpopulated.index(ssd['slot'])
+        if (ssd['slot'] == 'NA'):
+            continue
+        # ind=unpopulated.index(ssd['slot'])
+        unpopulated.pop(unpopulated.index(ssd['slot']))
+    print(unpopulated)
         
 def failEn(slot, onOff):
     onOff = 1
@@ -66,4 +54,4 @@ def failEn(slot, onOff):
 
 if __name__ == '__main__':
     #failEn(11, 1)
-    check_populated_slots(ssds)
+    check_populated_slots2(ssds)
