@@ -7,12 +7,13 @@ import re
 import os
 import json
 coloramainit(autoreset=True)
+import encledctrl
 
 def start_configuration():
     config = {}
     loaded_config = configparser.ConfigParser()
     loaded_config.read('ssdverify.ini')
-    for item in ['DEBUG', 'ATTRIBUTES', 'PART NUMBERS']:
+    for item in ['DEBUG', 'LEDCONTROL', 'ATTRIBUTES', 'PART NUMBERS']:
         if item not in loaded_config.sections():
             return create_default_ini()
     config['ssd_pns'] = dict(loaded_config['PART NUMBERS'])
@@ -25,12 +26,14 @@ def start_configuration():
             config[item][subitem] = json.loads(json_ready_value)
     #appending debug as non-subitem parameter
     config['debug'] = dict(loaded_config["DEBUG"])['debug']
+    config['ledcontrol'] = dict(loaded_config["LEDCONTROL"])['ledcontrol']
     return config
 
 def create_default_ini():
     print("\'ssdverify.ini\' not found, creating predefined configuration...")
     new_config = configparser.ConfigParser()
     debug = 0
+    ledcontrol =1
     verif_attributes = {'INTEL': {'Media_Wearout_Indicator': 95},
                         'MICRON': {'Media_Wearout_Indicator': 95},
                         'SAMSUNG': {'Media_Wearout_Indicator': 95}}
@@ -47,6 +50,7 @@ def create_default_ini():
                '10': {"SSD-00143-0": "SAMSUNG MZ7LH7T6HALA-00007"},
                }
     new_config['DEBUG'] = {'debug': '0'}
+    new_config['LEDCONTROL'] = {'ledcontrol': '1'}
     new_config['ATTRIBUTES'] = verif_attributes
     new_config['PART NUMBERS'] = ssd_pns
     with open('ssdverify.ini', 'w') as configfile:
@@ -57,8 +61,9 @@ def start_verify(ssd_choice, config):
     # config = start_configuration()
     ssd_pns=config['ssd_pns']
     verif_attributes = config['verif_attributes']
-    debug=int(config['debug'])
-    results=[]
+    debug = int(config['debug'])
+    ledcontrol = int(config['ledcontrol'])
+    results = []
     print("Starting verification for: " + "{} ({}) \n".format(list(ssd_pns[ssd_choice].keys())[0],
                                                                    list(ssd_pns[ssd_choice].values())[0]))
     logging.basicConfig(filename='ssd_verify_{}.log'.format(datetime.now().strftime("%d-%m-%Y-%H-%M")),
@@ -81,7 +86,6 @@ def start_verify(ssd_choice, config):
     #lsscsi
     lsscsi_scan = subprocess.run(["lsscsi"], stdout=subprocess.PIPE)
     lsscsi_decoded = [re_lsscsi_local_drive_dev.match(row) for row in lsscsi_scan.stdout.decode().split("\n")]
-
     filtered_ssd_devs = list(filter(lambda x: x != None, lsscsi_decoded))
     if debug:
         print(lsscsi_decoded)
@@ -109,10 +113,12 @@ def start_verify(ssd_choice, config):
 
 
     ssds = list(map(getdrivedata, filtered_ssd_devs))
-
-    # point to insert slot detection
+    if ledcontrol:
+        unpopulated = encledctrl.check_populated_slots(ssds)
+        encledctrl.led_ctrl(unpopulated, 'flikrOn')
 
     print(Fore.GREEN + "Found {} devices \n".format(len(ssds)))
+    input('Check SSDs amount and press enter to continue testing, ctrl-c to abort...')
 
     #vendor will be evaluated in ssd loop
     attributes_for_check = 0
@@ -131,6 +137,7 @@ def start_verify(ssd_choice, config):
 
         model_matched = [re_device_model.match(row) for row in smart_atts.stdout.decode().split("\n")]
         ssd['model'] = list(filter(lambda x: x != None, model_matched))[0][1]
+        ssd['failed'] = None
 
         #check ssd model
         if ssd['model'] != list(ssd_pns[ssd_choice].values())[0]:
@@ -169,6 +176,19 @@ def start_verify(ssd_choice, config):
                                         "PN_ok": ssd['PN_ok'],}
 
                                    )
+    #print(ssds)
+    #filter SSD's by failed property, shut down all led's and constantly switch on failed drives
+    if ledcontrol:
+        failed_ssds = filter(lambda x: x['failed'] == True, ssds)
+        #reset all leds
+        all_slots = encledctrl.get_all_slots()
+        encledctrl.led_ctrl(all_slots, 'flikrOff')
+        encledctrl.led_ctrl(all_slots, 'off')
+        #turning on only failed
+        failed_slots = encledctrl.get_failure_slots(failed_ssds)
+        encledctrl.led_ctrl(failed_slots, 'on')
+
+
     #sorting by slot
     try:
         results = sorted(results, key=lambda i: int(i['slot']))
@@ -235,7 +255,7 @@ def start_verify(ssd_choice, config):
             finish_color = Fore.RED
         if not attr_amount_ok:
             finish_color = Fore.RED
-            print(Fore.finish_color + "Warning: not all SMART data was retrieved from SSD's. \n Please compare defined attribute name and  smartctl -x output for selected drive.")
+            print(finish_color + "Warning: not all SMART data was retrieved from SSD's. \n Please compare defined attribute name and  smartctl -x output for selected drive.")
     else:
         finish_color = Fore.RED
     print(finish_color + "Process finished. Scanned {} drives, {} passed, {} failed.".format(len(ssds), len(ssds)-len(failed), len(failed)))
@@ -247,6 +267,13 @@ if __name__ == '__main__':
     while True:
         config = start_configuration()
         ssd_pns = config['ssd_pns']
+        ledcontrol = config['ledcontrol']
+        if ledcontrol:
+            #turn off all leds
+            all_slots =encledctrl.get_all_slots()
+            encledctrl.led_ctrl(all_slots,'flikrOff')
+            encledctrl.led_ctrl(all_slots, 'off')
+
         os.system('clear')
         print("\n")
         print("Available SSD type for verification:")
