@@ -53,8 +53,8 @@ def create_default_ini():
         new_config.write(configfile)
     return {debug: debug, 'ssd_pns': ssd_pns, 'verif_attributes': verif_attributes}
 
-def start_verify(ssd_choice,config):
-    config = start_configuration()
+def start_verify(ssd_choice, config):
+    # config = start_configuration()
     ssd_pns=config['ssd_pns']
     verif_attributes = config['verif_attributes']
     debug=int(config['debug'])
@@ -64,7 +64,7 @@ def start_verify(ssd_choice,config):
     logging.basicConfig(filename='ssd_verify_{}.log'.format(datetime.now().strftime("%d-%m-%Y-%H-%M")),
                         level=logging.DEBUG,
                         format='%(message)s')
-    logging.info("Started verification {}".format(datetime.now().strftime("%d-%m-%Y-%H-%M"), list(ssd_pns[ssd_choice].keys())[0]))
+    logging.info("Started verification {} drives from {}".format(datetime.now().strftime("%d-%m-%Y-%H-%M"), config['system_number'], list(ssd_pns[ssd_choice].keys())[0]))
     # rows from iscsi
     re_lsscsi_local_drive_dev = re.compile(
         '^\[([0-9]+:[0-9]:[0-9]+:[0-9])\]\s+.*(SAMSUNG|INTEL|Hitachi|Micron)\s+(\w+)\s+(\w+)\s+(/dev/\w+)\s*$')
@@ -266,8 +266,10 @@ if __name__ == '__main__':
                 print("Enter a digit number from 1 to {} and press Enter\n".format(len(ssd_pns)))
         if ssd_pns.keys():
             print("\n")
+            config['system_number'] = input("Please enter system number: \n")
             start_verify(ssd_choice,config)
         else:
             print('Please enter a valid choice')
+
         input("Press Enter to continue or ctrl-c to exit...")
         print("*" * 100)
