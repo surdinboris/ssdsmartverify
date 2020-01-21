@@ -57,9 +57,9 @@ def create_default_ini():
         new_config.write(configfile)
     return {debug: debug, 'ssd_pns': ssd_pns, 'verif_attributes': verif_attributes}
 
-def start_verify(ssd_choice, config):
-    # config = start_configuration()
-    ssd_pns=config['ssd_pns']
+def start_verify(ssd_choice,config):
+    #config = start_configuration()
+    ssd_pns = config['ssd_pns']
     verif_attributes = config['verif_attributes']
     debug = int(config['debug'])
     ledcontrol = int(config['ledcontrol'])
@@ -297,6 +297,5 @@ if __name__ == '__main__':
             start_verify(ssd_choice,config)
         else:
             print('Please enter a valid choice')
-
         input("Press Enter to continue or ctrl-c to exit...")
         print("*" * 100)
